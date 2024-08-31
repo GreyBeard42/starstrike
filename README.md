@@ -1,11 +1,11 @@
-# starstrike
-Starstrike is a simple top down shooter made in p5.js
+# Starstrike!
+Starstrike is a simple top-down shooter made in p5.js
 
-The evil red circles are comming...
+The evil red circles are coming...
 
 Shoot them with your mouse!
 
-Gain powerups from enemies!
+Gain power-ups from enemies!
 
 # CHANGELOG
 
@@ -13,6 +13,6 @@ v1.1
 
 Added sound toggle (default off)
 
-Added auto shoot (default on)
+Added Autoshoot (default on)
 
 Added Pause Button
