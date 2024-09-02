@@ -1,4 +1,4 @@
-let health, level, kills, weapons, levelWait, sound
+let health, level, score, kills, weapons, levelWait, sound, slow
 let shootSound
 let enemies = []
 let notf = []
@@ -6,7 +6,8 @@ let powerups = []
 let pQueue = []
 
 function setup() {
-  createCanvas(windowWidth, windowHeight*0.9)
+  let cnvs = createCanvas(windowWidth-15, windowHeight*0.9-15)
+  cnvs.parent('canvas')
 
   shootSound = new p5.Oscillator('sawtooth')
   shootSound.freq(100)
@@ -14,9 +15,11 @@ function setup() {
   sound = false
   health = 100
   level = 1
+  score = 0
   kills = 0
   weapons = 0
-  levelWait = 5
+  levelWait = 10
+  slow = 0
 
   draw = tick
 
@@ -37,13 +40,11 @@ function tick() {
 
   base()
 
-  for(i = 0; i < powerups.length; i++) {
-    item = powerups[i]
+  powerups.forEach((e) => {
+    powerUp(e.val, e.x, e.y)
+  })
 
-    powerUp(item.val, item.x, item.y)
-  }
-
-  if(round(random(1, 45)) == 1) addEnemy()
+  if(round(random(1, 45+(min(slow, 8)+1))) == 1) addEnemy()
 
   enemyMove()
 
@@ -54,6 +55,8 @@ function tick() {
   notfShow()
 
   attack()
+
+  if(slow>0) slow -= 0.1
 
   let pqI = 0
   pQueue.forEach((e) => {
@@ -112,11 +115,14 @@ function powerUp(type, x, y) {
     fill('#7977e0')
   } else if(type == 'Health') {
     fill('#cb77e0')
-  } else {
+  } else if(type == 'Nuke') {
     fill('#a6db74')
+  } else if(type == 'Slow') {
+    fill('#ebb757')
   }
   noStroke()
   translate(x, y)
+  //INCREACE DIVISION BY SLOW!!!!!
   rotate(frameCount/15)
   rect(0, 0, scale)
   rotate(frameCount/15+60)
@@ -130,8 +136,10 @@ function powerUp(type, x, y) {
     fill('#8a88eb')
   } else if(type == 'Health') {
     fill('#d88feb')
-  } else {
+  } else if(type == 'Nuke') {
     fill('#b4e884')
+  } else if(type == 'Slow') {
+    fill('#f7c363')
   }
   ellipseMode(CENTER)
   ellipse(0, 0, scale)
@@ -150,8 +158,8 @@ function base() {
 }
 
 function levelUp() {
-  if(kills >= levelWait) {
-    levelWait += min(levelWait*1.1, 10)
+  if(levelWait == 0) {
+    levelWait = 10
     level++
 
     let alert = {
@@ -163,26 +171,32 @@ function levelUp() {
 }
 
 function enemyMove() {
-  for(i = 0; i < enemies.length; i++) {
+  //HAS TO BE FOR LOOP
+  //Because aftr we remove an enemy we have to do i--
+  for(i=0; i<enemies.length; i++) {
     let item = enemies[i]
     if(item.health <= 0) {
-      if(round(random(1, 10)) == 1) {
+      if(round(random(1, 8)) == 1) {
         let powerup = {}
-        if(round(random(1, 3)) == 1) {
+        let id = round(random(1, 4))
+        if(id == 1) {
           powerup.val = 'Weapons'
-        } else if(round(random(1, 2)) == 1) {
+        } else if(id == 2) {
           powerup.val = 'Health'
-        } else {
+        } else if(id == 3) {
           powerup.val = 'Nuke'
+        } else if(id == 4) {
+          powerup.val = 'Slow'
         }
         powerup.x = item.x
         powerup.y = item.y
         pQueue.push(powerup)
-        //powerups.push(powerup)
       }
 
       enemies.splice(i, 1)
+      score += 10
       kills++
+      levelWait--
       i = -1
       //Because after this i++
     } else {
@@ -207,13 +221,15 @@ function enemyMove() {
       }
       text(item.health+'/'+item.dHealth, item.x, y)
 
-      item.speed = max(700-level*45, 100)
+      item.speed = 700-level*10
+      if(item.speed<100) item.speed = 100
 
       if(dist(width/2, height/2, item.x, item.y) < width/18+item.size/2) {
         health -= item.size/1500
       } else {
-        item.x += (width/2-item.x)/item.speed
-        item.y += (height/2-item.y)/item.speed}
+        item.x += ((width/2-item.x)/item.speed)/(min(slow, 8)+1)
+        item.y += ((height/2-item.y)/item.speed)/(min(slow, 8)+1)
+      }
     }
   }
 }
@@ -240,8 +256,8 @@ function info() {
   textSize(scale)
   textAlign(LEFT, BOTTOM)
   text('HEALTH '+round(health)+'/100', 5, height-5)
-  text('LEVEL '+level, 5, height-scale-5)
-  text('KILLS '+kills, 5, height-(scale*2)-5)
+  text('SCORE '+score, 5, height-scale-5)
+  text('LEVEL '+level, 5, height-(scale*2)-5)
 
   //textAlign(RIGHT, BOTTOM)
   //text('Press space to pause', width-5, height-5)
@@ -249,10 +265,8 @@ function info() {
 
 function addEnemy() {
   enemy = {}
-
-  //enemy.size = width/random(12, 15)-min((level/5), 8)
-  //enemy.size = width/5
-  enemy.size = width/(random(12, 15)-min(level/5, 7))
+  
+  enemy.size = width/(random(12, 15)-level/5) // used to be min(level/5, 7) in place of level/5
 
   if(round(random(1,2)) == 1) {
     enemy.x = random(0-width*0.17, width*1.17)
@@ -290,12 +304,12 @@ function addEnemy() {
 
 function attack() {
   //enemies
-  for(i = 0; i < enemies.length; i++) {
-    let distance = dist(mouseX, mouseY, enemies[i].x, enemies[i].y)
-    if(distance < enemies[i].size/2) {
-      enemies[i].health -= round(random(0, 5))+min(weapons, 15)
+  enemies.forEach((e) => {
+    let distance = dist(mouseX, mouseY, e.x, e.y)
+    if(distance < e.size/2) {
+      e.health -= round(random(0, 5))+weapons
     }
-  }
+  })
 
   //powerups
   for(i = 0; i < powerups.length; i++) {
@@ -308,6 +322,8 @@ function attack() {
 
       if(powerups[i].val == 'Nuke') {
         alert.text = 'Nuke Exploded!'
+      } else if(powerups[i].val == 'Slow') {
+        alert.text = 'Slow-Mo Activated!'
       } else {
         alert.text = message
       }
@@ -318,9 +334,26 @@ function attack() {
         health = 100
       } else if(powerups[i].val == 'Weapons') {
         weapons += 2
-      } else {
+      } else if(powerups[i].val == 'Nuke') {
+        let up = 0
+        enemies.forEach(() => {
+          score += 5
+          kills++
+          up += 0.25
+        })
+        level += ceil(up)
+        let alert = {
+          time: frameCount,
+          text: 'LEVEL UP'
+        }
+        notf.push(alert)
+
         enemies = []
+      } else if(powerups[i].val == 'Slow') {
+        slow = 100
       }
+
+      score += 25
 
       powerups.splice(i, 1)
     }
@@ -335,12 +368,16 @@ function die() {
   fill('#a7b6c2')
   textSize(width/10)
   strokeWeight(width/250)
-  textAlign(CENTER, BOTTOM)
-  text('YOU DIED', width/2, height/2)
   textAlign(CENTER, TOP)
+  text('YOU DIED', width/2, height/20)
   textSize(width/14)
   strokeWeight(width/350)
-  text('Level '+level+' - '+kills+' Kills', width/2, height/2)
+  let y = height/3
+  text('Level '+level, width/2, y)
+  y += width/14
+  text('Score '+score, width/2, y)
+  y += width/14
+  text('Kills '+kills, width/2, y)
 }
 
 function lol() {
