@@ -1,6 +1,8 @@
 # Starstrike!
 Starstrike is a simple top-down shooter made in p5.js
 
+[Play on Homepage](https://greybeard42.neocities.org/javascript/starstrike/)
+
 The evil red circles are coming...
 
 Shoot them with your mouse!
