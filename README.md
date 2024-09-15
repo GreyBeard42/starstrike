@@ -41,6 +41,7 @@ v1.2 UNFINISHED
 
 - Rework Levels?
 
+---
 
 [Starstrike](http://greybeard42.neocities.org/javascript/starstrike/) © 2024 by [GreyBeard42](../../../) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)
 
