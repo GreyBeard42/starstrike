@@ -1,7 +1,7 @@
 # Starstrike!
 Starstrike is a simple top-down shooter made in p5.js
 
-[Play on Homepage](https://greybeard42.neocities.org/javascript/starstrike/)
+[Play on Homepage](https://greybeard42.github.io/javascript/starstrike/)
 
 The evil red circles are coming...
 
@@ -12,10 +12,11 @@ Gain power-ups from enemies!
 ---
 
 ## Proposed v1.2 - UNFINISHED
-
 - New Powerup (Slowmo)
-
 - Rework Levels?
+- Super sick effects
+  - Screen Shake
+  - Particles
 
 ---
 
