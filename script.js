@@ -1,4 +1,5 @@
-let health, level, score, kills, weapons, levelWait, sound, slow
+let health, level, kills, weapons, levelWait, sound, slow, shake
+let doShake = true
 let shootSound
 let enemies = []
 let notf = []
@@ -6,8 +7,7 @@ let powerups = []
 let pQueue = []
 
 function setup() {
-  let cnvs = createCanvas(windowWidth-15, windowHeight*0.9-15)
-  cnvs.parent('canvas')
+  createCanvas(windowWidth, windowHeight*0.9)
 
   shootSound = new p5.Oscillator('sawtooth')
   shootSound.freq(100)
@@ -15,11 +15,11 @@ function setup() {
   sound = false
   health = 100
   level = 1
-  score = 0
   kills = 0
   weapons = 0
-  levelWait = 10
+  levelWait = 5
   slow = 0
+  shake = new Shake()
 
   draw = tick
 
@@ -33,6 +33,8 @@ function setup() {
 // V actualy, draw V
 function tick() {
   background('#313538')
+  shake.update()
+  if(doShake) translate(shake.x, shake.y)
 
   if(health <= 0) die()
 
@@ -40,9 +42,11 @@ function tick() {
 
   base()
 
-  powerups.forEach((e) => {
-    powerUp(e.val, e.x, e.y)
-  })
+  for(i = 0; i < powerups.length; i++) {
+    item = powerups[i]
+
+    powerUp(item.val, item.x, item.y)
+  }
 
   if(round(random(1, 45+(min(slow, 8)+1))) == 1) addEnemy()
 
@@ -57,7 +61,7 @@ function tick() {
   attack()
 
   if(slow>0) slow -= 0.1
-
+  
   let pqI = 0
   pQueue.forEach((e) => {
     if(dist(mouseX, mouseY, e.x, e.y) > width/10) {
@@ -115,14 +119,13 @@ function powerUp(type, x, y) {
     fill('#7977e0')
   } else if(type == 'Health') {
     fill('#cb77e0')
-  } else if(type == 'Nuke') {
+  } else if(type == "Nuke") {
     fill('#a6db74')
   } else if(type == 'Slow') {
-    fill('#ebb757')
+    fill('#f7c363')
   }
   noStroke()
   translate(x, y)
-  //INCREACE DIVISION BY SLOW!!!!!
   rotate(frameCount/15)
   rect(0, 0, scale)
   rotate(frameCount/15+60)
@@ -158,8 +161,8 @@ function base() {
 }
 
 function levelUp() {
-  if(levelWait == 0) {
-    levelWait = 10
+  if(kills >= levelWait) {
+    levelWait += min(levelWait*1.1, 10)
     level++
 
     let alert = {
@@ -171,12 +174,10 @@ function levelUp() {
 }
 
 function enemyMove() {
-  //HAS TO BE FOR LOOP
-  //Because aftr we remove an enemy we have to do i--
-  for(i=0; i<enemies.length; i++) {
+  for(i = 0; i < enemies.length; i++) {
     let item = enemies[i]
     if(item.health <= 0) {
-      if(round(random(1, 8)) == 1) {
+      if(round(random(1, 10)) == 1) {
         let powerup = {}
         let id = round(random(1, 4))
         if(id == 1) {
@@ -191,12 +192,13 @@ function enemyMove() {
         powerup.x = item.x
         powerup.y = item.y
         pQueue.push(powerup)
+        //powerups.push(powerup)
       }
 
+      if(enemies[i].x > width/2) shake.request(-width/60)
+      else shake.request(width/60)
       enemies.splice(i, 1)
-      score += 10
-      kills++
-      levelWait--
+      kills++ 
       i = -1
       //Because after this i++
     } else {
@@ -221,8 +223,7 @@ function enemyMove() {
       }
       text(item.health+'/'+item.dHealth, item.x, y)
 
-      item.speed = 700-level*10
-      if(item.speed<100) item.speed = 100
+      item.speed = max(700-level*50, 100)
 
       if(dist(width/2, height/2, item.x, item.y) < width/18+item.size/2) {
         health -= item.size/1500
@@ -256,17 +257,17 @@ function info() {
   textSize(scale)
   textAlign(LEFT, BOTTOM)
   text('HEALTH '+round(health)+'/100', 5, height-5)
-  text('SCORE '+score, 5, height-scale-5)
-  text('LEVEL '+level, 5, height-(scale*2)-5)
+  text('LEVEL '+level, 5, height-scale-5)
+  text('KILLS '+kills, 5, height-(scale*2)-5)
 
-  //textAlign(RIGHT, BOTTOM)
-  //text('Press space to pause', width-5, height-5)
+  textAlign(RIGHT, BOTTOM)
+  text('v1.2', width-5, height-5)
 }
 
 function addEnemy() {
   enemy = {}
-  
-  enemy.size = width/(random(12, 15)-level/5) // used to be min(level/5, 7) in place of level/5
+
+  enemy.size = width/(random(12, 15)-min(level/5, 7))
 
   if(round(random(1,2)) == 1) {
     enemy.x = random(0-width*0.17, width*1.17)
@@ -304,12 +305,12 @@ function addEnemy() {
 
 function attack() {
   //enemies
-  enemies.forEach((e) => {
-    let distance = dist(mouseX, mouseY, e.x, e.y)
-    if(distance < e.size/2) {
-      e.health -= round(random(0, 5))+weapons
+  for(i = 0; i < enemies.length; i++) {
+    let distance = dist(mouseX, mouseY, enemies[i].x, enemies[i].y)
+    if(distance < enemies[i].size/2) {
+      enemies[i].health -= round(random(0, 3.5))+min(weapons, 10)
     }
-  })
+  }
 
   //powerups
   for(i = 0; i < powerups.length; i++) {
@@ -333,27 +334,14 @@ function attack() {
       if(powerups[i].val == 'Health') {
         health = 100
       } else if(powerups[i].val == 'Weapons') {
-        weapons += 2
-      } else if(powerups[i].val == 'Nuke') {
-        let up = 0
-        enemies.forEach(() => {
-          score += 5
-          kills++
-          up += 0.25
-        })
-        level += ceil(up)
-        let alert = {
-          time: frameCount,
-          text: 'LEVEL UP'
-        }
-        notf.push(alert)
-
+        weapons += 1
+      } else if(powerups[i].val == "Nuke") {
         enemies = []
+        if(powerups[i].x > width/2) shake.request(-width/20)
+        else shake.request(width/20)
       } else if(powerups[i].val == 'Slow') {
         slow = 100
       }
-
-      score += 25
 
       powerups.splice(i, 1)
     }
@@ -368,16 +356,12 @@ function die() {
   fill('#a7b6c2')
   textSize(width/10)
   strokeWeight(width/250)
+  textAlign(CENTER, BOTTOM)
+  text('YOU DIED', width/2, height/2)
   textAlign(CENTER, TOP)
-  text('YOU DIED', width/2, height/20)
   textSize(width/14)
   strokeWeight(width/350)
-  let y = height/3
-  text('Level '+level, width/2, y)
-  y += width/14
-  text('Score '+score, width/2, y)
-  y += width/14
-  text('Kills '+kills, width/2, y)
+  text('Level '+level+' - '+kills+' Kills', width/2, height/2)
 }
 
 function lol() {
@@ -404,6 +388,46 @@ function pause() {
     } else {
       draw = tick
       e.innerText = 'Pause'
+    }
+  }
+}
+
+function shakeToggle() {
+  if(doShake) {
+    doShake = false
+    document.getElementById('shake').innerText = 'ScreenShake OFF'
+  } else {
+    doShake = true
+    document.getElementById('shake').innerText = 'ScreenShake ON'
+  }
+}
+
+class Shake {
+  constructor() {
+    this.x = 0
+    this.y = 0
+    this.xvel = 0
+    this.time = 0
+    this.step = 0
+    this.target = 0
+  }
+  request(x=-width/50, frames=abs(x/20)+1) {
+    if(round(this.x) == 0) this.shake(x, frames)
+  }
+  shake(x, frames) {
+    this.step = 1
+    this.target = x
+    this.xvel = x/frames
+  }
+  update() {
+    this.x += this.xvel
+    if(this.step == 1 && abs(this.target-this.x) < width/100) this.step = 2
+    if(this.step == 2) this.xvel = (this.target-this.x)/3
+
+    if(this.step == 2 && round(this.x) == round(this.target)) this.step = 0
+    if(this.step == 0) {
+        this.target = 0
+        this.xvel = (this.target-this.x)/3
     }
   }
 }
