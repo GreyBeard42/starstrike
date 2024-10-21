@@ -7,7 +7,8 @@ let powerups = []
 let pQueue = []
 
 function setup() {
-  createCanvas(windowWidth-15, windowHeight*0.9)
+  let cnvs = createCanvas(windowWidth-15, windowHeight*0.9)
+  cnvs.parent('canvas')
 
   shootSound = new p5.Oscillator('sawtooth')
   shootSound.freq(100)
