@@ -1,0 +1,15 @@
+{
+  "title": "Starstrike!",
+  "desc": "A simple top-down shooter made in p5.js",
+
+  "status": "archived",
+  "version": "v1.2",
+
+  "date": "4/13/2024",
+
+  "tags": [
+    "javascript",
+    "p5.js",
+    "game"
+  ]
+}
